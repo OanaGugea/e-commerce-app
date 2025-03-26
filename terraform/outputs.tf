@@ -1,4 +1,4 @@
-output "api_url" {
-  description = "The URL of the API Gateway"
-  value       = aws_apigatewayv2_stage.api_stage.invoke_url
+output "api_gateway_url" {
+  description = "Base URL of API Gateway"
+  value       = aws_api_gateway_deployment.dynamodb_api_deployment.invoke_url
 }

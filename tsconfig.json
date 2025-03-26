@@ -6,6 +6,8 @@
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "Node",
-    "outDir": "dist"
+    "outDir": "dist",
+    "rootDir": "./src",
+    "resolveJsonModule": true
   }
 }
