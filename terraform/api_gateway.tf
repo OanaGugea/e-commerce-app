@@ -1,72 +1,47 @@
 // create api gateway rescource
-resource "aws_api_gateway_rest_api" "dynamodb_api" {
-  name        = "DynamoDBAPI"
-  description = "API for DynamoDB operations"
+resource "aws_apigatewayv2_api" "dynamodb_api" {
+  name          = "DynamoDBAPI"
+  protocol_type = "HTTP"
 }
 
-// add the path /items to the REST API
-resource "aws_api_gateway_resource" "items_resource" {
-  rest_api_id = aws_api_gateway_rest_api.dynamodb_api.id
-  parent_id   = aws_api_gateway_rest_api.dynamodb_api.root_resource_id
-  path_part   = "items"
+// create an integration for the Lambda function
+resource "aws_apigatewayv2_integration" "lambda_integration" {
+  api_id           = aws_apigatewayv2_api.dynamodb_api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.dynamodb_lambda.invoke_arn
 }
 
-// add a GET method to the /items path
-resource "aws_api_gateway_method" "get_items" {
-  rest_api_id   = aws_api_gateway_rest_api.dynamodb_api.id
-  resource_id   = aws_api_gateway_resource.items_resource.id
-  http_method   = "GET"
-  authorization = "NONE"
+// add a GET route
+resource "aws_apigatewayv2_route" "get_items" {
+  api_id    = aws_apigatewayv2_api.dynamodb_api.id
+  route_key = "GET /items"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
-// add a POST method to the /items path
-resource "aws_api_gateway_method" "post_method" {
-  rest_api_id   = aws_api_gateway_rest_api.dynamodb_api.id
-  resource_id   = aws_api_gateway_resource.items_resource.id
-  http_method   = "POST"
-  authorization = "NONE"  
+// add a POST route
+resource "aws_apigatewayv2_route" "post_items" {
+  api_id    = aws_apigatewayv2_api.dynamodb_api.id
+  route_key = "POST /items"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
-// create an integration between the GET method in api gateway and the Lambda function
-resource "aws_api_gateway_integration" "get_lambda_integration" {
-  rest_api_id = aws_api_gateway_rest_api.dynamodb_api.id
-  resource_id = aws_api_gateway_resource.items_resource.id
-  http_method = aws_api_gateway_method.get_items.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.dynamodb_lambda.invoke_arn
+// create a stage (Auto deploy is enabled by default)
+resource "aws_apigatewayv2_stage" "dynamodb_stage" {
+  api_id      = aws_apigatewayv2_api.dynamodb_api.id
+  name        = "dev"
+  auto_deploy = true
 }
 
-// create an integration between the POST method in api gateway and the Lambda function
-resource "aws_api_gateway_integration" "post_lambda_integration" {
-  rest_api_id             = aws_api_gateway_rest_api.dynamodb_api.id
-  resource_id             = aws_api_gateway_resource.items_resource.id
-  http_method             = aws_api_gateway_method.post_method.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.dynamodb_lambda.invoke_arn
-}
-
-// allow API Gateway to invoke the lambda function
-resource "aws_lambda_permission" "apigw_post_invoke" {
-  statement_id  = "AllowAPIGatewayInvokePOST"
+// allow API Gateway to invoke the Lambda function
+resource "aws_lambda_permission" "apigw_lambda_permission" {
+  statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.dynamodb_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn = "${aws_api_gateway_rest_api.dynamodb_api.execution_arn}/*/POST/"
+  source_arn = "${aws_apigatewayv2_api.dynamodb_api.execution_arn}/*/*"
 }
 
-// create a deployment for the REST API
-resource "aws_api_gateway_deployment" "dynamodb_api_deployment" {
-  depends_on = [aws_api_gateway_integration.get_lambda_integration, aws_api_gateway_integration.post_lambda_integration]
-  rest_api_id = aws_api_gateway_rest_api.dynamodb_api.id
+// output the API Gateway URL
+output "api_gateway_url" {
+  value = aws_apigatewayv2_api.dynamodb_api.api_endpoint
 }
-
-// create api gateway stage
-resource "aws_api_gateway_stage" "dynamodb_api_stage" {
-  rest_api_id = aws_api_gateway_rest_api.dynamodb_api.id
-  deployment_id = aws_api_gateway_deployment.dynamodb_api_deployment.id
-  stage_name = "dev"
-}
-
-
