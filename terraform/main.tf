@@ -1,3 +1,8 @@
+variable "aws_region" {
+  description = "AWS region"
+  default     = "eu-west-1"
+}
+
 provider "aws" {
-  region = "eu-central-1" # Change as needed
+  region = var.aws_region
 }

@@ -8,7 +8,8 @@ resource "aws_apigatewayv2_api" "dynamodb_api" {
 resource "aws_apigatewayv2_integration" "lambda_integration" {
   api_id           = aws_apigatewayv2_api.dynamodb_api.id
   integration_type = "AWS_PROXY"
-  integration_uri  = aws_lambda_function.dynamodb_lambda.invoke_arn
+  integration_uri  = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${aws_lambda_function.dynamodb_lambda.arn}/invocations"
+
 }
 
 // add a GET route
@@ -22,6 +23,20 @@ resource "aws_apigatewayv2_route" "get_items" {
 resource "aws_apigatewayv2_route" "post_items" {
   api_id    = aws_apigatewayv2_api.dynamodb_api.id
   route_key = "POST /items"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+}
+
+// add a PUT route
+resource "aws_apigatewayv2_route" "put_items" {
+  api_id    = aws_apigatewayv2_api.dynamodb_api.id
+  route_key = "PUT /items"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+}
+
+// add a DELETE route
+resource "aws_apigatewayv2_route" "delete_items" {
+  api_id    = aws_apigatewayv2_api.dynamodb_api.id
+  route_key = "DELETE /items"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
