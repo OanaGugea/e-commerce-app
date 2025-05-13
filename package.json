@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "package": "zip -j dist/lambda.zip dist/index.js"
+    "package": "cd lambda && npm install && npm run package",
+    "deploy": "cd terraform && terraform init && terraform apply -auto-approve"
   },
   "repository": {
     "type": "git",

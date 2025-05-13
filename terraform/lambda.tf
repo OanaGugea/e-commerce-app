@@ -27,6 +27,13 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
+// attach policy to allow lambda to write logs
+resource "aws_iam_role_policy_attachment" "lambda_cloudwatch_logs" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+
 // attach dynaboDB access policy to lambda execution role
 resource "aws_iam_policy_attachment" "lambda_dynamodb_attach" {
   name       = "lambda_dynamodb_attachment"
@@ -47,4 +54,10 @@ resource "aws_lambda_permission" "apigw_lambda" {
   function_name = aws_lambda_function.dynamodb_lambda.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn = "${aws_apigatewayv2_api.dynamodb_api.execution_arn}/*/*"
+}
+
+//add logs
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.dynamodb_lambda.function_name}"
+  retention_in_days = 7
 }

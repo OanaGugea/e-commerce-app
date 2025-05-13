@@ -1,0 +1,14 @@
+{
+    "name": "dynamodb-lambda",
+    "version": "1.0.0",
+    "type": "commonjs",
+    "dependencies": {
+      "@aws-sdk/client-dynamodb": "^3.500.0",
+      "@aws-sdk/lib-dynamodb": "^3.500.0"
+    },
+    "scripts": {
+      "build": "tsc",
+      "package": "npm run build && zip -j ../dist/lambda.zip ../dist/index.js"
+    }
+  }
+  
