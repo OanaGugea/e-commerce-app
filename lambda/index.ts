@@ -32,13 +32,13 @@ export const handler = async (
         Item: { id: body.id, name: body.name },
       });
       await docClient.send(putCommand);
-      return { statusCode: 200, body: JSON.stringify({ message: "Item added!" }), headers: CORS_HEADERS, };
+      return { statusCode: 200, headers: CORS_HEADERS, body: JSON.stringify({ message: "Item added!" }), };
     }
 
     if (event.httpMethod === "GET") {
       const scanCommand = new ScanCommand({ TableName: TABLE_NAME });
       const { Items } = await docClient.send(scanCommand);
-      return { statusCode: 200, body: JSON.stringify(Items), headers: CORS_HEADERS, };
+      return { statusCode: 200, headers: CORS_HEADERS, body: JSON.stringify(Items), };
     }
 
     if (event.httpMethod === "PUT") {
@@ -50,7 +50,7 @@ export const handler = async (
         ExpressionAttributeNames: Object.keys(updateFields).reduce((acc, key) => ({ ...acc, [`#${key}`]: key }), {}),
         ExpressionAttributeValues: Object.values(updateFields).reduce((acc: any, val, i) => ({ ...acc, [`:val${i}`]: val }), {}) as any,
       }));
-      return { statusCode: 200, body: JSON.stringify({ message: "Item updated!" }), headers: CORS_HEADERS, };
+      return { statusCode: 200, headers: CORS_HEADERS, body: JSON.stringify({ message: "Item updated!" }), };
     }
 
     if (event.httpMethod === "DELETE") {
@@ -59,12 +59,12 @@ export const handler = async (
         TableName: "ItemsTable",
         Key: { id },
       }));
-      return { statusCode: 200, body: JSON.stringify({ message: "Item deleted!" }), headers: CORS_HEADERS, };
+      return { statusCode: 200, headers: CORS_HEADERS, body: JSON.stringify({ message: "Item deleted!" }), };
     }
 
-    return { statusCode: 400, body: JSON.stringify({ message: "Unsupported request method" }), headers: CORS_HEADERS, };
+    return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ message: "Unsupported request method" }), };
   } catch (error: any) {
     console.error("Error:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }), headers: CORS_HEADERS, };
+    return { statusCode: 500, headers: CORS_HEADERS, body: JSON.stringify({ error: error.message }), };
   }
 };
