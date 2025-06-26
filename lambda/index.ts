@@ -6,11 +6,25 @@ const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = "ItemsTable";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "OPTIONS,POST,GET,PUT,DELETE",
+};
+
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   console.log("Event:", JSON.stringify(event));
   try {
+    if (event.httpMethod === "OPTIONS") {
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: "",
+      };
+    }
+
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
       const putCommand = new PutCommand({
@@ -18,13 +32,13 @@ export const handler = async (
         Item: { id: body.id, name: body.name },
       });
       await docClient.send(putCommand);
-      return { statusCode: 200, body: JSON.stringify({ message: "Item added!" }) };
+      return { statusCode: 200, body: JSON.stringify({ message: "Item added!" }), headers: CORS_HEADERS, };
     }
 
     if (event.httpMethod === "GET") {
       const scanCommand = new ScanCommand({ TableName: TABLE_NAME });
       const { Items } = await docClient.send(scanCommand);
-      return { statusCode: 200, body: JSON.stringify(Items) };
+      return { statusCode: 200, body: JSON.stringify(Items), headers: CORS_HEADERS, };
     }
 
     if (event.httpMethod === "PUT") {
@@ -36,7 +50,7 @@ export const handler = async (
         ExpressionAttributeNames: Object.keys(updateFields).reduce((acc, key) => ({ ...acc, [`#${key}`]: key }), {}),
         ExpressionAttributeValues: Object.values(updateFields).reduce((acc: any, val, i) => ({ ...acc, [`:val${i}`]: val }), {}) as any,
       }));
-      return { statusCode: 200, body: JSON.stringify({ message: "Item updated!" }) };
+      return { statusCode: 200, body: JSON.stringify({ message: "Item updated!" }), headers: CORS_HEADERS, };
     }
 
     if (event.httpMethod === "DELETE") {
@@ -45,12 +59,12 @@ export const handler = async (
         TableName: "ItemsTable",
         Key: { id },
       }));
-      return { statusCode: 200, body: JSON.stringify({ message: "Item deleted!" }) };
+      return { statusCode: 200, body: JSON.stringify({ message: "Item deleted!" }), headers: CORS_HEADERS, };
     }
 
-    return { statusCode: 400, body: JSON.stringify({ message: "Unsupported request method" }) };
+    return { statusCode: 400, body: JSON.stringify({ message: "Unsupported request method" }), headers: CORS_HEADERS, };
   } catch (error: any) {
     console.error("Error:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+    return { statusCode: 500, body: JSON.stringify({ error: error.message }), headers: CORS_HEADERS, };
   }
 };
