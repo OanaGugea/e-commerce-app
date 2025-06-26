@@ -22,8 +22,11 @@
   "homepage": "https://github.com/OanaGugea/e-commerce-app#readme",
   "devDependencies": {
     "@types/aws-lambda": "^8.10.148",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.14.1",
     "esbuild": "^0.25.0",
+    "jest": "^30.0.3",
+    "ts-jest": "^29.4.0",
     "typescript": "^5.7.3"
   },
   "dependencies": {
