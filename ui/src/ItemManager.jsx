@@ -1,146 +1,192 @@
 import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Snackbar,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { Add, Delete, Edit } from "@mui/icons-material";
 
-const API_URL = "https://81liflhylf.execute-api.eu-central-1.amazonaws.com/dev"; 
+const API_URL = "https://l432xcsxj1.execute-api.eu-west-1.amazonaws.com/dev/items";
 
-export default function ItemManager() {
+const ItemManager = () => {
   const [items, setItems] = useState([]);
-  const [form, setForm] = useState({ id: "", name: "", price: "" });
-  const [editId, setEditId] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [openForm, setOpenForm] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
+  const [currentItem, setCurrentItem] = useState({ id: "", name: "" });
+  const [deleteId, setDeleteId] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
 
-  // Fetch items
   const fetchItems = async () => {
-    setLoading(true);
-    setError("");
     try {
-      const res = await fetch(API_URL, { method: "GET" });
+      const res = await fetch(API_URL);
       const data = await res.json();
       setItems(data);
-    } catch (err) {
-      setError("Failed to fetch items");
+    } catch (error) {
+      console.error("Fetch error:", error);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchItems();
   }, []);
 
-  // Handle form input
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleOpenForm = (item = { id: "", name: "" }) => {
+    setCurrentItem(item);
+    setOpenForm(true);
   };
 
-  // Add or update item
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  const handleCloseForm = () => {
+    setOpenForm(false);
+    setCurrentItem({ id: "", name: "" });
+  };
+
+  const handleSave = async () => {
+    const method = currentItemExists() ? "PUT" : "POST";
     try {
-      const method = editId ? "PUT" : "POST";
-      const body = JSON.stringify({
-        id: form.id,
-        name: form.name,
-        ...(form.price && { price: Number(form.price) }),
-      });
-      const res = await fetch(API_URL, {
+      await fetch(API_URL, {
         method,
         headers: { "Content-Type": "application/json" },
-        body,
+        body: JSON.stringify(currentItem),
       });
-      if (!res.ok) throw new Error("Request failed");
-      setForm({ id: "", name: "", price: "" });
-      setEditId(null);
+      handleCloseForm();
       fetchItems();
-    } catch (err) {
-      setError("Failed to save item");
+      setSnackbar({ open: true, message: "Item saved successfully!" });
+    } catch (error) {
+      console.error(error);
     }
-    setLoading(false);
   };
 
-  // Edit item
-  const handleEdit = (item) => {
-    setForm({ id: item.id, name: item.name, price: item.price || "" });
-    setEditId(item.id);
+  const currentItemExists = () => {
+    return items.some((item) => item.id === currentItem.id);
   };
 
-  // Delete item
-  const handleDelete = async (id) => {
-    setLoading(true);
-    setError("");
+  const handleOpenDelete = (id) => {
+    setDeleteId(id);
+    setOpenDelete(true);
+  };
+
+  const handleCloseDelete = () => {
+    setOpenDelete(false);
+    setDeleteId(null);
+  };
+
+  const handleDelete = async () => {
     try {
-      const res = await fetch(API_URL, {
+      await fetch(API_URL, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id: deleteId }),
       });
-      if (!res.ok) throw new Error("Delete failed");
+      handleCloseDelete();
       fetchItems();
-    } catch (err) {
-      setError("Failed to delete item");
+      setSnackbar({ open: true, message: "Item deleted successfully!" });
+    } catch (error) {
+      console.error(error);
     }
-    setLoading(false);
   };
 
   return (
-    <div style={{ maxWidth: 500, margin: "2rem auto", fontFamily: "sans-serif" }}>
-      <h2>Item Manager</h2>
-      <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
-        <input
-          name="id"
-          placeholder="ID"
-          value={form.id}
-          onChange={handleChange}
-          required
-          disabled={!!editId}
-        />
-        <input
-          name="name"
-          placeholder="Name"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="price"
-          placeholder="Price"
-          value={form.price}
-          onChange={handleChange}
-          type="number"
-          min="0"
-        />
-        <button type="submit" disabled={loading}>
-          {editId ? "Update" : "Add"}
-        </button>
-        {editId && (
-          <button
-            type="button"
-            onClick={() => {
-              setForm({ id: "", name: "", price: "" });
-              setEditId(null);
-            }}
-          >
-            Cancel
-          </button>
-        )}
-      </form>
-      {error && <div style={{ color: "red" }}>{error}</div>}
-      {loading && <div>Loading...</div>}
-      <ul>
-        {items.map((item) => (
-          <li key={item.id} style={{ marginBottom: 8 }}>
-            <b>{item.name}</b> (ID: {item.id}
-            {item.price !== undefined && `, $${item.price}`})
-            <button style={{ marginLeft: 8 }} onClick={() => handleEdit(item)}>
-              Edit
-            </button>
-            <button style={{ marginLeft: 4 }} onClick={() => handleDelete(item.id)}>
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <Box p={4}>
+      <Typography variant="h4" gutterBottom>
+        Item Manager
+      </Typography>
+
+      <Stack direction="row" justifyContent="flex-end" mb={2}>
+        <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenForm()}>
+          Add Item
+        </Button>
+      </Stack>
+
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell><strong>ID</strong></TableCell>
+            <TableCell><strong>Name</strong></TableCell>
+            <TableCell><strong>Actions</strong></TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {items.map((item) => (
+            <TableRow key={item.id}>
+              <TableCell>{item.id}</TableCell>
+              <TableCell>{item.name}</TableCell>
+              <TableCell>
+                <IconButton onClick={() => handleOpenForm(item)}>
+                  <Edit color="primary" />
+                </IconButton>
+                <IconButton onClick={() => handleOpenDelete(item.id)}>
+                  <Delete color="error" />
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {/* Form Dialog */}
+      <Dialog open={openForm} onClose={handleCloseForm}>
+        <DialogTitle>{currentItemExists() ? "Edit Item" : "Add Item"}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            <TextField
+              label="ID"
+              value={currentItem.id}
+              onChange={(e) => setCurrentItem({ ...currentItem, id: e.target.value })}
+              disabled={currentItemExists()}
+              fullWidth
+            />
+            <TextField
+              label="Name"
+              value={currentItem.name}
+              onChange={(e) => setCurrentItem({ ...currentItem, name: e.target.value })}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseForm}>Cancel</Button>
+          <Button variant="contained" onClick={handleSave}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDelete} onClose={handleCloseDelete}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete item with ID: <strong>{deleteId}</strong>?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDelete}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={handleDelete}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ open: false, message: "" })}
+        message={snackbar.message}
+      />
+    </Box>
   );
-}
+};
+
+export default ItemManager;
