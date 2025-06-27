@@ -2,6 +2,12 @@
 resource "aws_apigatewayv2_api" "dynamodb_api" {
   name          = "DynamoDBAPI"
   protocol_type = "HTTP"
+
+  cors_configuration {
+    allow_origins = ["*"]
+    allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers = ["Content-Type"]
+  }
 }
 
 // create an integration for the Lambda function
